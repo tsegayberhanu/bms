@@ -75,17 +75,17 @@ model Payment {
 
 model Reminder {
   id     String         @id @default(uuid())
-  billId String
-  userId String
   type   ReminderType
   status ReminderStatus @default(PENDING)
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
   sentAt    DateTime?
 
-  bill Bill @relation(fields: [billId], references: [id])
-  user User @relation(fields: [userId], references: [id])
+  billId String
+  bill   Bill   @relation(fields: [billId], references: [id])
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 }
 
 enum Role {
