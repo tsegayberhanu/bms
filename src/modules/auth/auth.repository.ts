@@ -1,17 +1,19 @@
+import type { User } from "../../generated/prisma/client.js";
 import type { Role } from "../../generated/prisma/enums.js";
 import { prisma } from "../../shared/config/index.js";
 
-export const AuthRepository = {
-  async findUserByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email } });
-  },
-
-  async findUserById(id: string) {
-    return prisma.user.findUnique({ where: { id } });
-  },
-
-  async createUser(input: {name:string, email:string, password:string, role:Role}) {
-    return prisma.user.create({ data: input });
-  },
+export class AuthRepository{
+  static async findUserByEmail(email: string):Promise<User|null> {
+    return await prisma.user.findUnique({ where: { email } });
+  }
+  static async findUserById(id: string):Promise<User|null> {
+    return await prisma.user.findUnique({ where: { id } });
+  }
+  static async createUser(input: {name:string, email:string, password:string, role:Role}):Promise<User> {
+    return await prisma.user.create({ data: input });
+  }
+  static async getAllUsers():Promise<User[]>{
+    return await prisma.user.findMany();
+  }
 
 };
