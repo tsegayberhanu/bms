@@ -9,29 +9,105 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  name          String
-  password      String
-  role          Role
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  refreshTokens RefreshToken[]
+  id       String @id @default(uuid())
+  email    String @unique
+  name     String
+  password String
+  role     Role
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens     RefreshToken[]
+  billsCreated      Bill[]         @relation("BillerBills")
+  billsAssigned     Bill[]         @relation("CustomerBills")
+  paymentsMade      Payment[]      @relation("CustomerPayments")
+  remindersReceived Reminder[]
 }
 
 model RefreshToken {
   id        String   @id @default(uuid())
   token     String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
   revoked   Boolean  @default(false)
   expiresAt DateTime
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+model Bill {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  amount      Decimal    @db.Decimal(10, 2)
+  dueDate     DateTime
+  status      BillStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  billerId String
+  biller   User   @relation("BillerBills", fields: [billerId], references: [id])
+
+  customerId String
+  customer   User   @relation("CustomerBills", fields: [customerId], references: [id])
+
+  payments  Payment[]
+  reminders Reminder[]
+}
+
+model Payment {
+  id             String  @id @default(uuid())
+  transactionKey String  @unique
+  amount         Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  billId String
+  bill   Bill   @relation(fields: [billId], references: [id])
+
+  customerId String
+  customer   User   @relation("CustomerPayments", fields: [customerId], references: [id])
+}
+
+model Reminder {
+  id     String         @id @default(uuid())
+  billId String
+  userId String
+  type   ReminderType
+  status ReminderStatus @default(PENDING)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  sentAt    DateTime?
+
+  bill Bill @relation(fields: [billId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 enum Role {
   ADMIN
   BILLER
   CUSTOMER
+}
+
+enum ReminderType {
+  ASSIGNED
+  UPCOMING
+  DUE
+  OVERDUE
+}
+
+enum BillStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
 }
