@@ -1,4 +1,4 @@
-import type { BillStatus } from "../../generated/prisma/enums.js";
+import type { BillPaymentMode, BillStatus } from "../../generated/prisma/enums.js";
 
 export type CreateBillInput = {
   title: string;
@@ -7,6 +7,7 @@ export type CreateBillInput = {
   dueDate: Date;
   billerId: string;
   customerId: string;
+  paymentMode?:BillPaymentMode,
 };
 
 export type UpdateBillInput = {

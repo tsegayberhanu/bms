@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BillPaymentMode } from "../../generated/prisma/enums.js";
 
 export const createBillSchema = z.object({
   title: z.string().min(3),
@@ -12,6 +13,7 @@ export const createBillSchema = z.object({
       message: "Due date must be in the future",
     }),
   customerId: z.uuid(),
+  paymentMode:z.enum(BillPaymentMode).optional(),
 }).strict();
 
 export const updateBillSchema = z

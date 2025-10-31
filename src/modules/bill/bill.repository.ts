@@ -1,5 +1,5 @@
-import { Prisma, type Bill } from "../../generated/prisma/client.js";
-import { ReminderType } from "../../generated/prisma/enums.js";
+import { Prisma, PrismaClient, type Bill } from "../../generated/prisma/client.js";
+import { BillStatus, ReminderType } from "../../generated/prisma/enums.js";
 import { prisma } from "../../shared/config/index.js";
 import { NotFoundError } from "../../shared/errors/index.js";
 import type {
@@ -17,7 +17,7 @@ export class BillRepository {
           reminders: {
             create: {
               type: ReminderType.ASSIGNED,
-              userId: data.customerId,
+              customerId: data.customerId,
             },
           },
         },
@@ -76,4 +76,27 @@ export class BillRepository {
       throw error;
     }
   }
+  static async findBillWithPayments(
+    billId: string, 
+    client?: Prisma.TransactionClient | PrismaClient 
+  ) {
+    const prsma = client || prisma;
+    
+    return await prsma.bill.findUnique({
+      where: { id: billId },
+      include: { payments: { select: { amount: true } } }
+    });
+  }
+  static async updateBillStatus(
+      billId: string,
+      status: BillStatus,
+      client?: Prisma.TransactionClient | PrismaClient 
+    ): Promise<void> {
+      const prsma = client || prisma;
+      await prsma.bill.update({
+        where: { id: billId },
+        data: { status },
+      });
+    }
+
 }
