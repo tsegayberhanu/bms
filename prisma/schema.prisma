@@ -36,15 +36,18 @@ model RefreshToken {
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
+
+  @@index([token])
 }
 
 model Bill {
-  id          String     @id @default(uuid())
+  id          String          @id @default(uuid())
   title       String
   description String?
-  amount      Decimal    @db.Decimal(10, 2)
+  amount      Decimal         @db.Decimal(10, 2)
   dueDate     DateTime
-  status      BillStatus @default(PENDING)
+  status      BillStatus      @default(PENDING)
+  paymentMode BillPaymentMode @default(ALLOW_PARTIAL)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -57,12 +60,16 @@ model Bill {
 
   payments  Payment[]
   reminders Reminder[]
+
+  @@index([billerId])
+  @@index([customerId])
 }
 
 model Payment {
   id             String  @id @default(uuid())
   transactionKey String  @unique
   amount         Decimal @db.Decimal(10, 2)
+  note           String? @db.Text
 
   createdAt DateTime @default(now())
 
@@ -71,6 +78,9 @@ model Payment {
 
   customerId String
   customer   User   @relation("CustomerPayments", fields: [customerId], references: [id])
+
+  @@index([billId])
+  @@index([customerId])
 }
 
 model Reminder {
@@ -84,8 +94,9 @@ model Reminder {
   billId String
   bill   Bill   @relation(fields: [billId], references: [id])
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
+  customerId String
+  customer   User   @relation(fields: [customerId], references: [id])
+  
 }
 
 enum Role {
@@ -101,8 +112,14 @@ enum ReminderType {
   OVERDUE
 }
 
+enum BillPaymentMode {
+  FULL_ONLY
+  ALLOW_PARTIAL
+}
+
 enum BillStatus {
   PENDING
+  PARTIAL
   PAID
   OVERDUE
 }
@@ -110,4 +127,5 @@ enum BillStatus {
 enum ReminderStatus {
   PENDING
   SENT
+  CANCELLED
 }
