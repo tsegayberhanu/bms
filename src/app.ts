@@ -6,6 +6,9 @@ import { errorHandlerMiddleware } from "./shared/middlewares/index.js";
 import authRouter from "./modules/auth/auth.route.js";
 import { AuthRepository } from "./modules/auth/auth.repository.js";
 import { billRouter } from "./modules/bill/index.js";
+import { paymentRoutes } from "./modules/payment/payment.route.js";
+import reminderRouter from "./modules/reminder/reminder.route.js";
+
 const app = express();
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
@@ -13,8 +16,8 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
 app.use("/api/bills", billRouter);
-
-
+app.use("/api/payments", paymentRoutes)
+app.use("/api/reminders", reminderRouter)
 
 app.use("/api/health", async (_req: Request, res: Response) => {
   res.json({
