@@ -10,10 +10,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:seed": "tsx prisma/seed.ts",
-    "prisma:studio": "prisma studio",
-    "postinstall": "npm run prisma:generate"
+    "prisma:migrate": "prisma migrate dev"
   },
   "keywords": [],
   "author": "",
