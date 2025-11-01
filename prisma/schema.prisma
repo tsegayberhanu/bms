@@ -64,6 +64,8 @@ model Bill {
 
   @@index([billerId])
   @@index([customerId])
+  @@index([BillStatus])
+
 }
 
 model Payment {
@@ -97,7 +99,8 @@ model Reminder {
 
   customerId String
   customer   User   @relation(fields: [customerId], references: [id])
-  
+
+   @@index([ReminderType])
 }
 
 enum Role {
