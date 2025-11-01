@@ -5,6 +5,8 @@ info:
   description: API documentation for the BMS REST API backend service.
 
 servers:
+  - url: https://bms-3k5g.onrender.com/api
+    description: Live test server ((Render))
   - url: http://localhost:3000/api
     description: Local development server 
     
@@ -124,8 +126,7 @@ paths:
                         $ref: '#/components/schemas/RefreshTokenData'
         default:
           $ref: '#/components/responses/ErrorResponseTemplate'
-      security:
-        - cookieAuth: []
+      security: []
   /auth/logout:
     post:
       tags:
@@ -828,10 +829,6 @@ paths:
 
 components:
   securitySchemes:
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: refreshToken
     bearerAuth:
       type: http
       scheme: bearer
