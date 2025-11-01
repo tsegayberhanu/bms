@@ -7,6 +7,7 @@ import {
   customerSpendingQuerySchema,
   outstandingQuerySchema,
   reminderEffectivenessQuerySchema,
+  reminderStatusQuerySchema,
 } from "./analytics.validation.js";
 
 export class AnalyticsController {
@@ -92,7 +93,7 @@ export class AnalyticsController {
   }
   static async getReminderStatusDistribution(req: Request, res: Response, next:NextFunction) {
     try {
-      const parsed = parseWithSchema(reminderEffectivenessQuerySchema, req.query);
+      const parsed = parseWithSchema(reminderStatusQuerySchema, req.query);
       const data = await AnalyticsService.getReminderStatusDistribution(
         req.user,
         parsed
