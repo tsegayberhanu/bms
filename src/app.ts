@@ -8,6 +8,7 @@ import { AuthRepository } from "./modules/auth/auth.repository.js";
 import { billRouter } from "./modules/bill/index.js";
 import { paymentRoutes } from "./modules/payment/payment.route.js";
 import reminderRouter from "./modules/reminder/reminder.route.js";
+import analyticsRouter from "./modules/analytics/analytics.route.js";
 
 const app = express();
 app.use(express.json()); 
@@ -18,6 +19,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/bills", billRouter);
 app.use("/api/payments", paymentRoutes)
 app.use("/api/reminders", reminderRouter)
+app.use("/api/analytics", analyticsRouter)
 
 app.use("/api/health", async (_req: Request, res: Response) => {
   res.json({
