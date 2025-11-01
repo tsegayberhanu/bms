@@ -15,5 +15,5 @@ paymentRouter.post(
 );
 
 paymentRouter.get("/",authenticateUser, PaymentController.getPayments)
-
+paymentRouter.get("/:id",authenticateUser, PaymentController.getPaymentById)
 export { paymentRouter as paymentRoutes };
