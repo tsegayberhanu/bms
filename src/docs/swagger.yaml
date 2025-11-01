@@ -1,0 +1,1219 @@
+openapi: 3.1.0
+info:
+  title: BMS API
+  version: 1.0.0
+  description: API documentation for the BMS REST API backend service.
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server 
+    
+security:
+  - bearerAuth: []
+tags:
+  - name: System
+    description: System health endpoints.
+  - name: Auth
+    description: User authentication and token handling.
+  - name: User
+    description: System users(customers, admins, billers).  
+  - name: Bill
+    description: Manage bills and their statuses.
+  - name: Payment
+    description: Handle bill payments and payment history.
+  - name: Reminder
+    description: Manage payment reminders for bills.
+  - name: Analytics
+    description: Billing and payment performance insights.
+
+paths:
+  /health:
+    get:
+      security: []
+      tags:
+        - System
+      summary: Check system health
+      description: |
+        Returns a simple response indicating that the API is running.
+        Provides the current server timestamp.
+      responses:
+        200:
+          description: System health status
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: object
+                        properties:
+                          time:
+                            type: string
+                            format: date-time
+                            example: "2025-11-01T08:00:00.000Z"
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  
+  /auth/signup:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /auth/signin:
+    post:
+      security: []
+      tags:
+        - Auth
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+      responses:
+        200:
+          description: User authenticated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/SignInResponseData'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /auth/refresh-token:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token using HttpOnly refresh token
+      description: Use the HttpOnly cookie containing the refresh token to obtain a new access token.
+      responses:
+        200:
+          description: Access token refreshed successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/RefreshTokenData'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+      security:
+        - cookieAuth: []
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Log out a user and revoke all refresh tokens
+      description: Logs out the current user and revokes all refresh tokens. Requires authentication.
+      responses:
+        200:
+          description: User logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutSuccessResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'      
+  
+  /users:
+    get:
+      tags:
+        - User
+      summary: Get all users
+      description: |
+        Retrieve a list of users. Role-based access:
+        - ADMIN: can access all users
+        - BILLER/CUSTOMER: can only access themselves
+        Optional filters:
+        - `userId`: filter by specific user
+        - `role`: filter by role
+      parameters:
+        - in: query
+          name: userId
+          schema:
+            type: string
+            format: uuid
+          description: Filter by specific user ID
+        - in: query
+          name: role
+          schema:
+            type: string
+            enum: [ADMIN, BILLER, CUSTOMER]
+          description: Filter by role
+      responses:
+        200:
+          description: Users fetched successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /users/{id}:
+    get:
+      tags:
+        - User
+      summary: Get user by ID
+      description: |
+        Retrieve a single user by ID. Role-based access:
+        - ADMIN: can access any user
+        - CUSTOMER/BILLER: can access only their own record
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID to fetch
+      responses:
+        200:
+          description: User fetched successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+
+  /bills:
+    post:
+      tags:
+        - Bill
+      summary: Create a bill
+      description: Only BILLER role can create a bill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBillRequest'
+      responses:
+        201:
+          description: Bill created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillSuccessResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+    get:
+      tags:
+        - Bill
+      summary: Get bills
+      description: |
+        Retrieve bills based on role:
+        - BILLER: only bills they created
+        - CUSTOMER: only bills assigned to them
+        - ADMIN: all bills
+      parameters:
+        - in: query
+          name: customerId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: billerId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [PENDING, PARTIAL, PAID, OVERDUE]
+        - in: query
+          name: dueDateFrom
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: dueDateTo
+          schema:
+            type: string
+            format: date-time
+      responses:
+        200:
+          description: List of bills
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillListSuccessResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /bills/{id}:
+    get:
+      tags:
+        - Bill
+      summary: Get bill by ID
+      description: Only the BILLER who created the bill, the assigned CUSTOMER, or an ADMIN can view this bill.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Bill details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillSuccessResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+    patch:
+      tags:
+        - Bill
+      summary: Update a bill
+      description: |
+        Only the BILLER who created the bill can update it. 
+        Only non-sensitive fields are editable: title, description, and dueDate.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBillRequest'
+      responses:
+        200:
+          description: Updated bill
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillSuccessResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+    delete:
+      tags:
+        - Bill
+      summary: Delete a bill
+      description: |
+        Only the BILLER who created the bill can delete it. 
+        For testing purposes but normally deletion should be restricted.
+        or soft deletion(another logic)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Bill deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillSuccessResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+
+  /payments:
+    post:
+      tags:
+        - Payment
+      summary: Make a payment
+      description: Only a CUSTOMER can make a payment for a bill assigned to them. Duplicate transaction keys are rejected.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentInput'
+      responses:
+        '200':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+    get:
+      tags:
+        - Payment
+      summary: Get payments
+      description: |
+        Retrieve payments based on role and optional filters:
+        - CUSTOMER: only payments made by themselves
+        - BILLER: only payments for bills they created
+        - ADMIN: all payments
+      parameters:
+        - name: billId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: billerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: customerId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: transactionKey
+          in: query
+          schema:
+            type: string
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Payments fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentListResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /payments/{id}:
+    get:
+      tags:
+        - Payment
+      summary: Get payment by ID
+      description: |
+        Retrieve a payment by ID. Only:
+        - CUSTOMER: if they made the payment
+        - BILLER: if it belongs to a bill they created
+        - ADMIN: can access all
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+
+  /reminders:
+      get:
+        tags:
+          - Reminder
+        summary: Get reminders
+        description: |
+          Retrieve reminders based on role and optional filters:
+          - CUSTOMER: only reminders assigned to themselves
+          - BILLER: only reminders for bills they created
+          - ADMIN: all reminders
+        parameters:
+          - in: query
+            name: customerId
+            schema:
+              type: string
+              format: uuid
+          - in: query
+            name: billId
+            schema:
+              type: string
+              format: uuid
+          - in: query
+            name: type
+            schema:
+              type: string
+              enum: [ASSIGNED, DUE, OVERDUE]
+          - in: query
+            name: status
+            schema:
+              type: string
+              enum: [PENDING, SENT, CANCELLED]
+          - in: query
+            name: createdFromDate
+            schema:
+              type: string
+              format: date
+          - in: query
+            name: createdToDate
+            schema:
+              type: string
+              format: date
+          - in: query
+            name: sentFromDate
+            schema:
+              type: string
+              format: date
+          - in: query
+            name: sentToDate
+            schema:
+              type: string
+              format: date
+        responses:
+          '200':
+            description: Reminders retrieved successfully
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ReminderListResponse'
+          default:
+            $ref: '#/components/responses/ErrorResponseTemplate'
+  /reminders/{id}:
+    get:
+      summary: Get reminder by ID
+      description: |
+        Retrieve a single reminder by its ID.  
+        Role-based access:
+          - ADMIN: can access all reminders  
+          - BILLER: can access reminders for their bills  
+          - CUSTOMER: can access only their own reminders
+      tags:
+        - Reminder
+      parameters:
+        - name: id
+          in: path
+          description: Reminder ID
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Reminder fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Reminder'
+        default:
+            $ref: '#/components/responses/ErrorResponseTemplate'            
+
+
+  /analytics/collection-rate:
+    get:
+      tags:
+        - Analytics
+      summary: Get collection rate
+      description: |
+        Retrieves the overall payment collection rate for bills.
+        - ADMIN: collection for all bills
+        - BILLER: collection for their own bills
+        **Implication:** Helps track how effectively bills are being paid and identify collection performance trends.
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+          description: Start date to filter the analytics
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+          description: End date to filter the analytics
+      responses:
+        200:
+          description: Collection rate data fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  collectionRatePercent:
+                    type: number
+                    example: 85.5
+                  totalBillAmount:
+                    type: number
+                    example: 10000
+                  collectedAmount:
+                    type: number
+                    example: 8550
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /analytics/bills-status-summary:
+    get:
+      tags:
+        - Analytics
+      summary: Get bill status summary
+      description: |
+        Retrieves the count of bills by status (PENDING, PARTIAL, PAID, OVERDUE).
+        - ADMIN: all bills
+        - BILLER: their own bills
+        **Implication:** Provides a quick overview of billing health and identifies bills requiring attention.
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: Bill status summary fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pending:
+                    type: integer
+                    example: 10
+                  partial:
+                    type: integer
+                    example: 5
+                  paid:
+                    type: integer
+                    example: 50
+                  overdue:
+                    type: integer
+                    example: 3
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /analytics/payments-outstanding:
+    get:
+      tags:
+        - Analytics
+      summary: Get outstanding payments
+      description: |
+        Retrieves total outstanding payment amount and number of unpaid bills.
+        - ADMIN: all bills
+        - BILLER: their own bills
+        **Implication:** Identifies revenue gaps and prioritizes follow-ups for overdue payments.
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: Outstanding payments data fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalOutstanding:
+                    type: number
+                    example: 1500
+                  totalUnpaidBills:
+                    type: integer
+                    example: 7
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /analytics/customers-spending:
+    get:
+      tags:
+        - Analytics
+      summary: Get customer spending
+      description: |
+        Aggregates total billed and paid amounts per customer.
+        - ADMIN: all customers
+        - BILLER: their own customers
+        **Implication:** Helps identify high-value customers and monitor customer payment behavior.
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: Customer spending fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    customerId:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                    totalBilled:
+                      type: number
+                      example: 1200
+                    totalPaid:
+                      type: number
+                      example: 1000
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /analytics/reminders-effectiveness:
+    get:
+      tags:
+        - Analytics
+      summary: Get reminder effectiveness
+      description: |
+        Calculates reminder conversion rates for full and partial payments by reminder type (ASSIGNED, UPCOMING, DUE, OVERDUE).
+        - ADMIN: all reminders
+        - BILLER: their own reminders
+        **Implication:** Evaluates which reminder types are most effective in driving payments.
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: Reminder effectiveness data fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      example: "DUE"
+                    conversionRateFull:
+                      type: number
+                      example: 75.0
+                    conversionRatePartial:
+                      type: number
+                      example: 10.5
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /analytics/reminders-status:
+    get:
+      tags:
+        - Analytics
+      summary: Get reminder status distribution
+      description: |
+        Provides count of reminders by type and status (PENDING, SENT, CANCELLED).
+        - ADMIN: all reminders
+        - BILLER: their own reminders
+        **Implication:** Allows monitoring of reminder delivery success and potential failures.
+      parameters:
+        - in: query
+          name: startDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: endDate
+          schema:
+            type: string
+            format: date
+      responses:
+        200:
+          description: Reminder status distribution fetched successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                      example: "UPCOMING"
+                    pending:
+                      type: integer
+                      example: 3
+                    sent:
+                      type: integer
+                      example: 10
+                    cancelled:
+                      type: integer
+                      example: 1
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+  /analytics/users-count:
+    get:
+      tags:
+        - Analytics
+      summary: Get users count by role
+      description: |
+        Retrieves the number of users in each role (ADMIN, BILLER, CUSTOMER).
+        **Implication:** Provides insight into the system's user distribution and helps in resource allocation or monitoring growth.
+      responses:
+        200:
+          description: User count by role fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ADMIN:
+                    type: integer
+                    example: 3
+                  BILLER:
+                    type: integer
+                    example: 15
+                  CUSTOMER:
+                    type: integer
+                    example: 120
+        default:
+          $ref: '#/components/responses/ErrorResponseTemplate'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: refreshToken
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT   
+  schemas:
+    # Generic success response wrapper
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [success]
+        code:
+          type: string
+          example: SUCCESS
+        message:
+          type: string
+          example: Request completed successfully
+        data:
+          nullable: true
+      required:
+        - status
+        - code
+        - message
+    # Generic error response wrapper
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        code:
+          type: string
+          example: ERROR_CODE
+        message:
+          type: string
+          example: error message
+        error:
+          type: object
+          properties:
+            details:
+              nullable: true
+              description: Extra context about the error
+            stack:
+              type: string
+              nullable: true
+              description: Stack trace (only in development)
+      required:
+        - status
+        - code
+        - message
+    # Pagination meta (reusable)
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 52
+        totalPages:
+          type: integer
+          example: 6
+    
+    SignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        name:
+          type: string
+          minLength: 2
+          example: John Doe
+        password:
+          type: string
+          minLength: 8
+          description: >
+            Must contain at least one uppercase letter, one lowercase letter,
+            one number, and one special character (@$!%*?&)
+          example: StrongPass1!
+        role:
+          type: string
+          enum:
+            - ADMIN
+            - BILLER
+            - CUSTOMER
+          description: Optional, defaults to CUSTOMER
+      required:
+        - email
+        - name
+        - password
+    SigninRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: StrongPass1!
+      required:
+        - email
+        - password
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 883a11e8-63ae-42ef-a654-afaf45608a5f
+        name:
+          type: string
+          example: user
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        role:
+          type: string
+          enum: [ADMIN, BILLER, CUSTOMER]
+          example: CUSTOMER
+      required:
+        - id
+        - name
+        - email
+        - role
+    SignInResponseData:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - accessToken
+        - user
+    RefreshTokenData:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      required:
+        - accessToken
+    LogoutSuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - properties:
+            data:
+              type: object
+              nullable: true
+              example: null
+    
+    Bill:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        amount:
+          type: number
+          format: float
+        dueDate:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [PENDING, PARTIAL, PAID, OVERDUE]
+        paymentMode:
+          type: string
+          enum: [FULL_ONLY, ALLOW_PARTIAL]
+        billerId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateBillRequest:
+      type: object
+      required:
+        - title
+        - amount
+        - dueDate
+        - customerId
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+        amount:
+          type: number
+          format: float
+          minimum: 0.01
+        dueDate:
+          type: string
+          format: date-time
+        paymentMode:
+          type: string
+          enum: [FULL_ONLY, ALLOW_PARTIAL]
+        customerId:
+          type: string
+          format: uuid
+    UpdateBillRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+        description:
+          type: string
+        dueDate:
+          type: string
+          format: date-time
+    BillListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Bill'
+    BillSuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - properties:
+            data:
+              $ref: '#/components/schemas/Bill'
+    BillListSuccessResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - properties:
+            data:
+              $ref: '#/components/schemas/BillListResponse'
+    CreatePaymentInput:
+      type: object
+      required:
+        - transactionKey
+        - billId
+        - amount
+      properties:
+        transactionKey:
+          type: string
+          description:  |
+            Client-generated unique identifier(idempotency key) for the payment.
+            Must be a random UUID to prevent duplicate payments.
+            The server will reject any payment with a previously used key.
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        billId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: float
+        note:
+          type: string
+          description: Optional note for the payment
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        transactionKey:
+          type: string
+        billId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: float
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        billStatus:
+          type: string
+          description: Status of the associated bill
+    PaymentResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/Payment'
+    PaymentListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Payment'
+    Reminder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [ASSIGNED, DUE, OVERDUE, OTHER]
+        status:
+          type: string
+          enum: [PENDING, SENT, CANCELLED]
+        billId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
+        bill:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            title:
+              type: string
+            amount:
+              type: number
+            dueDate:
+              type: string
+              format: date-time
+          nullable: true
+        customer:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+          nullable: true
+    ReminderListResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/Reminder'
+  
+  responses:
+      ErrorResponseTemplate:
+        description: Error Response
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ErrorResponse'
