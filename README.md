@@ -124,8 +124,11 @@ npm start
 
 ---
 
+
 ## 📄 Docs
 
 Swagger docs available under `/api/api-docs`
+
+Deployed on Render (test server) : https://bms-3k5g.onrender.com/api/api-docs
 
 
