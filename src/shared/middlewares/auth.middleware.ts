@@ -1,9 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import { extractBearerToken, verifyJwt } from "../utils/index.js";
 import { ForbiddenError, NotFoundError, UnauthorizedError } from "../errors/index.js";
-import { AuthRepository } from "../../modules/auth/auth.repository.js";
 import type { Role } from "../../generated/prisma/enums.js";
 import { envConfig } from "../config/env.config.js";
+import { UserRepository } from "../../modules/user/user.repository.js";
 
 export const authenticateUser = async (
   req: Request,
@@ -19,7 +19,7 @@ export const authenticateUser = async (
       envConfig.jwt.accessSecret
     );
 
-    const user = await AuthRepository.findUserById(decoded.userId);
+    const user = await UserRepository.findUserById(decoded.userId);
     if (!user) return next(new NotFoundError("User not found"));
 
     req.user = { userId: decoded.userId, role: decoded.role };
