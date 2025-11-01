@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default function setupSwagger(app: Express) {
-  const swaggerFilePath = join(__dirname, "./docs/swagger.yaml");
+  const swaggerFilePath = join(__dirname, "../docs/swagger.yaml");
 
   const loadYaml = (): Record<string, any> => {
     if (!fs.existsSync(swaggerFilePath)) {
