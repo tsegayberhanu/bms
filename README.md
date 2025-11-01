@@ -126,6 +126,6 @@ npm start
 
 ## 📄 Docs
 
-Swagger docs available under `/api/docs`
+Swagger docs available under `/api/api-docs`
 
 
