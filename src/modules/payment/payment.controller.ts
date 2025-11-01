@@ -46,4 +46,16 @@ export class PaymentController {
       next(error);
     }
   }
+  static async getPaymentById(req: Request, res: Response, next:NextFunction) {
+    try {
+      const paymentId = req.params.id;
+      const authUser = req.user; 
+
+      const payment = await PaymentService.getPaymentById(paymentId, authUser);
+
+      APIResponder.ok(res, payment);
+    } catch (err) {
+      next(err)
+    }
+  }
 }
