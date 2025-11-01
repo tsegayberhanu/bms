@@ -7,11 +7,11 @@
     "dev": "tsx watch src/server.ts",
     "dev:debug": "tsx watch --inspect src/server.ts",
     "build": "tsc",
-    "postbuild": "node ./scripts/copyfile.js",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "tsx prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "postinstall": "npm run prisma:generate"
   },
@@ -26,6 +26,7 @@
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.2.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {
