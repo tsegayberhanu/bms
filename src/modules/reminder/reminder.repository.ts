@@ -77,4 +77,13 @@ export class ReminderRepository {
       orderBy: { createdAt: "asc" }, // send oldest first
     });
   }
+  static async findById(reminderId: string) {
+    return prisma.reminder.findUnique({
+      where: { id: reminderId },
+      include: {
+        bill: true,
+        customer: true
+      },
+    });
+  }
 }

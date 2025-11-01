@@ -13,4 +13,13 @@ export class ReminderController {
       next(err);
     }
   }
+  static async getReminderById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const reminder = await ReminderService.getReminderById(req.user, id);
+      APIResponder.ok(res, reminder, "Reminder fetched successfully");
+    } catch (error) {
+      next(error);
+    }
+  }
 }

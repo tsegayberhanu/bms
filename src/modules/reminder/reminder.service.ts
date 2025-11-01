@@ -10,6 +10,7 @@ import type { ReminderFilter } from "./reminder.type.js";
 import {
   BadRequestError,
   ForbiddenError,
+  NotFoundError,
 } from "../../shared/errors/http-errors.js";
 import { BillRepository } from "../bill/index.js";
 
@@ -86,5 +87,32 @@ export class ReminderService {
         // logger.info(`Generated ${type} reminder for bill ${bill.id}`);
       }
     }
+  }
+  static async getReminderById(authUser: RequestUser, reminderId: string) {
+    if (!reminderId) {
+      throw new BadRequestError("reminderId is required");
+    }
+
+    const reminder = await ReminderRepository.findById(reminderId);
+
+    if (!reminder) {
+      throw new NotFoundError("Reminder not found");
+    }
+
+    if (
+      authUser.role === Role.CUSTOMER &&
+      reminder.customerId !== authUser.userId
+    ) {
+      throw new ForbiddenError("Cannot access this reminder");
+    }
+
+    if (
+      authUser.role === Role.BILLER &&
+      reminder.bill.billerId !== authUser.userId
+    ) {
+      throw new ForbiddenError("Cannot access this reminder");
+    }
+
+    return reminder;
   }
 }
