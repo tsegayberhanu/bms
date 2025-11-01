@@ -20,7 +20,7 @@ export type UpdateBillInput = {
 export type BillFilter = {
   billerId?: string;
   customerId?: string;
-  status?: BillStatus;
+  status?: BillStatus | { not?: BillStatus };
   dueDateFrom?: Date; 
   dueDateTo?: Date;
 };
