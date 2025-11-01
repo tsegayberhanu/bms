@@ -20,6 +20,7 @@ This project is a billing management system built with **Node.js**, **Express**,
 * Wallet behavior is assumed — **No wallet balance checks or updates**
 * Account Management: No real account/wallet system
 * Users assumed to use **one device/session** only — logging out kills all sessions
+* Users are self created with their role once in signup
 * Bills can be configured as **one-time (must be paid in full)** or **partial-payment allowed**
 * ADMIN sees all resources, BILLER & CUSTOMER strict resource ownership.
 * Reminder logic auto‑generates based on due dates
