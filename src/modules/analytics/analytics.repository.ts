@@ -1,4 +1,4 @@
-import { BillStatus } from "../../generated/prisma/enums.js";
+import { BillStatus, Role } from "../../generated/prisma/enums.js";
 import { prisma } from "../../shared/config/index.js";
 
 export class AnalyticsRepository {
@@ -190,6 +190,16 @@ export class AnalyticsRepository {
     });
 
     return reminders;
+  }
+  static async getUsersCountByRole() {
+    const admins = await prisma.user.count({ where: { role: Role.ADMIN } });
+    const billers = await prisma.user.count({ where: { role: Role.BILLER } });
+    const customers = await prisma.user.count({ where: { role: Role.CUSTOMER } });
+    return {
+      ADMIN: admins,
+      BILLER: billers,
+      CUSTOMER: customers,
+    };
   }
 }
 

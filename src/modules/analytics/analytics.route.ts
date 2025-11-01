@@ -48,4 +48,11 @@ analyticsRouter.get(
   AnalyticsController.getReminderStatusDistribution
 );
 
+analyticsRouter.get(
+  "/users-count",
+  authenticateUser,
+  authorizeUser([Role.ADMIN]),
+  AnalyticsController.getUsersCount
+);
+
 export default analyticsRouter;

@@ -135,4 +135,9 @@ export class AnalyticsService {
     return result;
   }
   
+  static async getUsersCount() {
+    const counts = await AnalyticsRepository.getUsersCountByRole();
+    return counts;
+  }
+
 }

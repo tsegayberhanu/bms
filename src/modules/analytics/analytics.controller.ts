@@ -103,4 +103,12 @@ export class AnalyticsController {
       next(error);
     }
   }
+  static async getUsersCount(_req:Request, res:Response, next:NextFunction){
+    try {
+      const counts = AnalyticsService.getUsersCount()
+      APIResponder.ok(res,counts, "User count by role fetched successfully")
+    } catch (error) {
+      next(error)
+    }
+  }
 }
