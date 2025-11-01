@@ -20,8 +20,10 @@ This project is a billing management system built with **Node.js**, **Express**,
 * Wallet behavior is assumed — **No wallet balance checks or updates**
 * Account Management: No real account/wallet system
 * Users assumed to use **one device/session** only — logging out kills all sessions
+* Bills can be configured as **one-time (must be paid in full)** or **partial-payment allowed**
 * ADMIN sees all resources, BILLER & CUSTOMER strict resource ownership.
 * Reminder logic auto‑generates based on due dates
+* Reminder sending = simulated, not delivered to users
 * Refresh token flow assumes a client that supports HTTP-only cookies.
 
 ## 🛠️ Technology Stack
@@ -32,19 +34,6 @@ This project is a billing management system built with **Node.js**, **Express**,
 * **JWT Auth**
 * **Zod** for validation
 
-## ⚙️ Environment Variables
-
-```
-see .env.example
-```
-
-## ▶️ Running the Project
-
-```bash
-npm install
-npx prisma generate
-npm run dev
-```
 
 ## ✅ API Highlights
 
@@ -53,6 +42,87 @@ npm run dev
 * **Bills**: create, list, get, update
 * **Payments**: create with idempotency key
 * **Reminders**: list + get by ID, auto‑generate
+* **Analytics**:
+
+    * **Collection rate**
+    * **Bill status summary**
+    * **Outstanding payments**
+    * **Customer spending**
+    * **Reminder effectiveness**
+    * **Reminder status distribution**
+    * **User role distribution**
+
+## 🏗️ Installation & Setup Guide
+
+### ✅ Prerequisites
+
+Make sure you have the following installed:
+
+| Tool              | Version                    |
+| ----------------- | -------------------------- |
+| Node.js           | ≥ 18.x                     |
+| PostgreSQL        | ≥ 14.x                     |
+| npm / pnpm / yarn | latest recommended         |
+
+---
+
+### 📦 Clone & Install Dependencies
+
+```bash
+git clone https://github.com/tsegayberhanu/bms.git
+cd bms
+npm install
+```
+
+---
+
+### ⚙️ Environment Configuration
+
+Copy example env and configure:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and update values:
+
+* Database connection (PostgreSQL)
+* JWT secrets
+* Refresh token config
+* Server port
+
+### 🗄️ Database Setup
+
+Generate Prisma client:
+
+```bash
+npx prisma generate
+```
+
+Run migrations:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+---
+
+### ▶️ Start the Server
+
+Development mode:
+
+```bash
+npm run dev
+```
+
+Production build:
+
+```bash
+npm run build
+npm start
+```
+
+---
 
 ## 📄 Docs
 
