@@ -4,5 +4,10 @@ import { authenticateUser } from "../../shared/middlewares/auth.middleware.js";
 
 const reminderRouter = Router();
 reminderRouter.get("/", authenticateUser    , ReminderController.getReminders);
+reminderRouter.get(
+  "/:id",
+  authenticateUser,
+  ReminderController.getReminderById
+);
 
 export default reminderRouter;
